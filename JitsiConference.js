@@ -551,6 +551,7 @@ JitsiConference.prototype.leave = function() {
         this.e2eping = null;
     }
 
+    logger.info(`TEST_REMOVE_ALL_LOCAL_TRACKS ${this.getLocalTracks().length}`)
     this.getLocalTracks().forEach(track => this.onLocalTrackRemoved(track));
 
     this.rtc.closeBridgeChannel();
@@ -973,6 +974,7 @@ JitsiConference.prototype._fireMuteChangeEvent = function(track) {
  */
 JitsiConference.prototype.onLocalTrackRemoved = function(track) {
     track._setConference(null);
+    logger.info(`TEST_ON_LOCAL_TRACK_REMOVED ${track}`)
     this.rtc.removeLocalTrack(track);
     track.removeEventListener(JitsiTrackEvents.TRACK_MUTE_CHANGED,
         track.muteHandler);
@@ -1015,28 +1017,22 @@ JitsiConference.prototype.replaceTrack = function(oldTrack, newTrack) {
             return Promise.reject(
                 new JitsiTrackError(JitsiTrackErrors.TRACK_IS_DISPOSED));
         }
+        this.onLocalTrackRemoved(oldTrack);
     }
     if (newTrack) {
         if (newTrack.disposed) {
             return Promise.reject(
                 new JitsiTrackError(JitsiTrackErrors.TRACK_IS_DISPOSED));
         }
+        logger.info(`TEST_REPLACE_TRACK_SETUP_NEW_TRACK ${newTrack}`);
+        // Now handle the addition of the newTrack at the
+        // JitsiConference level
+        this._setupNewTrack(newTrack);
     }
 
     // Now replace the stream at the lower levels
     return this._doReplaceTrack(oldTrack, newTrack)
-        .then(() => {
-            if (oldTrack) {
-                this.onLocalTrackRemoved(oldTrack);
-            }
-            if (newTrack) {
-                // Now handle the addition of the newTrack at the
-                // JitsiConference level
-                this._setupNewTrack(newTrack);
-            }
-
-            return Promise.resolve();
-        }, error => Promise.reject(new Error(error)));
+        .then(() => Promise.resolve(), error => Promise.reject(new Error(error)));
 };
 
 /**
@@ -2653,6 +2649,10 @@ JitsiConference.prototype._acceptP2PIncomingCall = function(
         remoteID);
 
     const localTracks = this.getLocalTracks();
+    logger.info(`TEST_LIST_LOCAL_TRACKS count: ${localTracks.length}`);
+    for (const track of localTracks) {
+        logger.info(`TEST_LIST_LOCAL_TRACKS ${track}`)
+    }
 
     this.p2pJingleSession.acceptOffer(
         jingleOffer,
