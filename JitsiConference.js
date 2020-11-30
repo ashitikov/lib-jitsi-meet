@@ -1062,28 +1062,27 @@ JitsiConference.prototype.replaceTrack = function(oldTrack, newTrack) {
             return Promise.reject(
                 new JitsiTrackError(JitsiTrackErrors.TRACK_IS_DISPOSED));
         }
+
+        logger.info(`TEST_REPLACE_TRACK_REMOVE_OLD_TRACK ${oldTrack}`);
+        this.onLocalTrackRemoved(oldTrack);
+
     }
     if (newTrack) {
         if (newTrack.disposed) {
             return Promise.reject(
                 new JitsiTrackError(JitsiTrackErrors.TRACK_IS_DISPOSED));
         }
+
+        logger.info(`TEST_REPLACE_TRACK_SETUP_NEW_TRACK ${newTrack}`);
+        // Now handle the addition of the newTrack at the
+        // JitsiConference level
+        this._setupNewTrack(newTrack);
+
     }
 
     // Now replace the stream at the lower levels
     return this._doReplaceTrack(oldTrack, newTrack)
-        .then(() => {
-            if (oldTrack) {
-                this.onLocalTrackRemoved(oldTrack);
-            }
-            if (newTrack) {
-                // Now handle the addition of the newTrack at the
-                // JitsiConference level
-                this._setupNewTrack(newTrack);
-            }
-
-            return Promise.resolve();
-        }, error => Promise.reject(new Error(error)));
+        .then(() => Promise.resolve(), error => Promise.reject(new Error(error)));
 };
 
 /**
